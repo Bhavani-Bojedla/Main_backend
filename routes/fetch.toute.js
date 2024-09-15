@@ -39,7 +39,7 @@ fetchRouter.get("/storetodb", async (req, res) => {
   }
 });
 
-fetchRouter.get("/show", async (req, res) => {
+fetchRouter.get("/", async (req, res) => {
   try {
     const data = await prisma.data.findMany();
     return res.json({
