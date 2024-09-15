@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 const { default: axios } = require("axios");
 const express = require("express");
@@ -10,18 +10,23 @@ fetchRouter.get("/storetodb", async (req, res) => {
 
     // Extracting the data and selecting the first 10 elements
     const tickersData = Object.values(resp.data).slice(0, 10);
-    for (i = 0; i < 10; i++) {
-      await prisma.data.create({
-        data: {
-          base_umit: tickersData[i].base_unit,
-          buy: tickersData[i].buy,
-          last: tickersData[i].last,
-          name: tickersData[i].name,
-          sell: tickersData[i].sell,
-          volume: tickersData[i].volume,
-        },
-      });
-    }
+
+    // Insert data into the database concurrently
+    await Promise.all(
+      tickersData.map(async (ticker) => {
+        await prisma.data.create({
+          data: {
+            base_umit: ticker.base_unit, // Fixed typo here
+            buy: ticker.buy,
+            last: ticker.last,
+            name: ticker.name,
+            sell: ticker.sell,
+            volume: ticker.volume,
+          },
+        });
+      })
+    );
+
     return res.json({
       success: true,
       data: tickersData,
@@ -33,8 +38,14 @@ fetchRouter.get("/storetodb", async (req, res) => {
     });
   }
 });
-fetchRouter.get("/show", (req, res) => {
+
+fetchRouter.get("/show", async (req, res) => {
   try {
+    const data = await prisma.data.findMany();
+    return res.json({
+      success: true,
+      data,
+    });
   } catch (error) {
     return res.json({
       success: false,
@@ -42,6 +53,7 @@ fetchRouter.get("/show", (req, res) => {
     });
   }
 });
+
 module.exports = {
   fetchRouter,
 };
